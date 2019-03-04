@@ -1,7 +1,7 @@
 
   # NumC ExprC Struct Definition -- Add more ExprC later
   defmodule NumC do
-    defstruct value: -1
+    defstruct value: nil
   end
 
   defmodule IfC do
@@ -10,13 +10,32 @@
 
   # IdC ExprC Struct Definition -- Add more ExprC later
   defmodule IdC do
-    defstruct value: -1
+    defstruct value: nil
   end
 
+  # StringC ExprC Struct Definition -- Add more ExprC later
+  defmodule StringC do
+    defstruct value: nil
+  end
 
-  # NumC Value Struct Definition -- Add more Value later
+  # LamC ExprC Struct Definition
+  defmodule LamC do
+    defstruct args: nil, body: nil
+  end
+
+  # Number Value Struct Definition -- Add more Value later
   defmodule NumV do
-    defstruct value: -1
+    defstruct value: nil
+  end
+
+  # StringV Value Struct Definition -- Add more Value later
+  defmodule StringV do
+    defstruct value: nil
+  end
+
+  # Closure Value Struct Definition -- Add more Value later
+  defmodule CloV do
+    defstruct params: nil, body: nil, env: nil
   end
 
   defmodule BoolV do
@@ -40,9 +59,12 @@ defmodule Main do
     cond do
       is_integer(n) -> %NumC{value: n}
       is_atom(n) -> %IdC{value: n}
+      is_binary(n) -> %StringC{value: n}
+      # default case
       true -> case n do
-                ['if', a, b, c] -> %IfC{test: a, then: b, else: c}
-              end
+          ['lam', a, b] -> %LamC{args: a, body: b}
+          ['if', a, b, c] -> %IfC{test: a, then: b, else: c}
+      end
     end
   end
 
@@ -61,6 +83,8 @@ defmodule Main do
       #                         end
       #             _ -> "ZHRL: test expression must evaluate to boolean"
       #           end
+      %StringC{} -> %StringV{value: expr.value}
+      %LamC{} -> %CloV{params: expr.args, body: expr.body, env: env}
     end
   end
 
@@ -68,24 +92,66 @@ defmodule Main do
   def serialize(v) do
     case v do
       %NumV{} -> IO.puts v.value
+      %StringV{} -> IO.puts v.value
       'myadd' -> IO.puts 'matched myadd'
       %BoolV{} -> IO.puts v.bool
     end
   end
 
+# Primitive wrapper functions
   def myadd(l, r) do
     case [l, r] do
       [%NumC{}, %NumC{}] -> l.value + r.value
-      _ -> "Error"
+      _ -> raise "ZHRL: Unable to add"
+    end
+  end
+
+  def mysub(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value - r.value
+      _ -> raise "ZHRL: Unable to subtract"
+    end
+  end
+
+  def mymult(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value * r.value
+      _ -> raise "ZHRL: Unable to multiply"
+    end
+  end
+
+  def mydiv(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> unless r.value === 0 do
+        l.value / r.value end
+      _ -> raise "ZHRL: Unable to divide"
+    end
+  end
+
+  def mylesseq(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value <= r.value
+    end
+  end
+
+  def myeq(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value === r.value
     end
   end
 
   def extend_env(env, sym, val) do
-    Map.put(env, sym, val)
+    env = Map.put(env, sym, val)
+    env
   end
 
   def topEnv() do
     te = extend_env(%Environment{}.bindings, :+, 'myadd')
+    te = extend_env(te, :-, 'mysub')
+    te = extend_env(te, :*, 'mymult')
+    te = extend_env(te, :/, 'mydiv')
+    te = extend_env(te, :<=, 'mylesseq')
+    te = extend_env(te, :equal?, 'myeq')
     te
   end
 
@@ -100,7 +166,37 @@ defmodule Main do
   end
 end
 
+
+defmodule TestParse do
+  def testLam do
+    unless Main.parse(['lam', ['x', 'y'], ['+', 'x', 'y']]) === %LamC{args: ['x','y'], body: ['+','x','y']} do
+      raise "TestParse: testLam: fail1"
+    end
+  end
+  def testAll do
+    testLam()
+  end
+end
+
+defmodule TestInterp do
+  def testLam do
+    lam_x_y_plus = %LamC{args: ['x','y'], body: ['+','x','y']}
+    topEnv = Main.topEnv()
+    result = Main.interp(lam_x_y_plus, topEnv)
+    expected = %CloV{params: lam_x_y_plus.args, body: lam_x_y_plus.body, env: topEnv}
+    unless result === expected do
+      raise "TestInterp: testLam: fail1"
+    end
+  end
+  def testAll do
+    testLam()
+  end
+end
+
 IO.puts Main.topInterp(8)
 IO.inspect Main.parse(['if', 6 > 5, 1, 0])
 IO.inspect Main.parse(['if', 5 > 6, 6 > 5, 0])
+IO.puts Main.topInterp("Hello, World")
 Main.topInterp(:+)
+TestParse.testAll()
+TestInterp.testAll()
