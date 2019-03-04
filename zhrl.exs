@@ -72,7 +72,6 @@ defmodule ZHRL do
   # given an elixir datatype or array of ZHRL syntax, evaluate the ZHRL result
   def topInterp(s) do
     result = serialize(interp(parse(s), topEnv()))
-    # IO.puts result
     result
   end
 
@@ -89,7 +88,7 @@ defmodule ZHRL do
                                 true -> then
                                 false -> els
                               end
-                  _ -> "ZHRL: test expression must evaluate to boolean"
+                  _ -> raise "ZHRL: test expression must evaluate to boolean"
                 end
       %StringC{} -> %StringV{value: expr.value}
       %LamC{} -> %CloV{params: expr.args, body: expr.body, env: env}
