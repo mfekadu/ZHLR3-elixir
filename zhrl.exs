@@ -4,6 +4,10 @@
     defstruct value: nil
   end
 
+  defmodule IfC do
+    defstruct test: nil, then: nil, else: nil
+  end
+
   # IdC ExprC Struct Definition -- Add more ExprC later
   defmodule IdC do
     defstruct value: nil
@@ -34,6 +38,10 @@
     defstruct params: nil, body: nil, env: nil
   end
 
+  defmodule BoolV do
+    defstruct bool: false
+  end
+
   # An environment
   defmodule Environment do
     defstruct bindings: %{} # Empty Map
@@ -52,12 +60,12 @@ defmodule Main do
       is_integer(n) -> %NumC{value: n}
       is_atom(n) -> %IdC{value: n}
       is_binary(n) -> %StringC{value: n}
-       # default case
+      # default case
       true -> case n do
-        ['lam', a, b] -> %LamC{args: a, body: b}
+          ['lam', a, b] -> %LamC{args: a, body: b}
+          ['if', a, b, c] -> %IfC{test: a, then: b, else: c}
       end
     end
-    # IO.puts num.value #Printing
   end
 
   # given ExprC and environment, output a Value
@@ -65,6 +73,16 @@ defmodule Main do
     case expr do
       %NumC{} -> %NumV{value: expr.value}
       %IdC{} -> envlookup(env, expr.value)
+      # %IfC{} -> i = interp(expr.test, env)
+      #           then = interp(expr.then, env)
+      #           els = interp(expr.els, env)
+      #           case i do
+      #             %BoolV{} -> case i.bool do
+      #                           true -> then
+      #                           false -> els
+      #                         end
+      #             _ -> "ZHRL: test expression must evaluate to boolean"
+      #           end
       %StringC{} -> %StringV{value: expr.value}
       %LamC{} -> %CloV{params: expr.args, body: expr.body, env: env}
     end
@@ -76,6 +94,7 @@ defmodule Main do
       %NumV{} -> IO.puts v.value
       %StringV{} -> IO.puts v.value
       'myadd' -> IO.puts 'matched myadd'
+      %BoolV{} -> IO.puts v.bool
     end
   end
 
@@ -175,6 +194,8 @@ defmodule TestInterp do
 end
 
 IO.puts Main.topInterp(8)
+IO.inspect Main.parse(['if', 6 > 5, 1, 0])
+IO.inspect Main.parse(['if', 5 > 6, 6 > 5, 0])
 IO.puts Main.topInterp("Hello, World")
 Main.topInterp(:+)
 TestParse.testAll()
