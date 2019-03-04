@@ -1,60 +1,76 @@
+# Language struct definitions -----------------------------------------------
 
-  # NumC ExprC Struct Definition -- Add more ExprC later
-  defmodule NumC do
-    defstruct value: nil
-  end
+# NumC ExprC Struct Definition
+defmodule NumC do
+  # (struct NumC ([n : Real]) #:transparent)
+  defstruct value: nil
+end
 
-  defmodule IfC do
-    defstruct test: nil, then: nil, else: nil
-  end
+defmodule IfC do
+  # (struct If ([tst : ExprC] [thn : ExprC] [els : ExprC]) #:transparent)
+  defstruct test: nil, then: nil, else: nil
+end
 
-  # IdC ExprC Struct Definition -- Add more ExprC later
-  defmodule IdC do
-    defstruct value: nil
-  end
+# IdC ExprC Struct Definition
+defmodule IdC do
+  # (struct IdC ([s : Symbol]) #:transparent)
+  defstruct value: nil
+end
 
-  # StringC ExprC Struct Definition -- Add more ExprC later
-  defmodule StringC do
-    defstruct value: nil
-  end
+# StringC ExprC Struct Definition
+defmodule StringC do
+  # (struct StringC ([s : String]) #:transparent)
+  defstruct value: nil
+end
 
-  # LamC ExprC Struct Definition
-  defmodule LamC do
-    defstruct args: nil, body: nil
-  end
+# LamC ExprC Struct Definition
+defmodule LamC do
+  # (struct LamC ([args : (Listof Symbol)] [body : ExprC]) #:transparent)
+  defstruct args: nil, body: nil
+end
 
-  # Number Value Struct Definition -- Add more Value later
-  defmodule NumV do
-    defstruct value: nil
-  end
+defmodule AppC do
+  # (struct AppC ([fun : ExprC] [args : (Listof ExprC)]) #:transparent)
+  defstruct fun: nil, args: nil
+end
 
-  # StringV Value Struct Definition -- Add more Value later
-  defmodule StringV do
-    defstruct value: nil
-  end
+# Value struct definitions -----------------------------------------------
+# Number Value
+defmodule NumV do
+  # (struct NumV ([n : Real]) #:transparent)
+  defstruct value: nil
+end
+# String Value
+defmodule StringV do
+  # (struct StringV ([s : String]) #:transparent)
+  defstruct value: nil
+end
+# Closure Value
+defmodule CloV do
+  # (struct CloV ([params : (Listof Symbol)] [body : ExprC] [env : Env]) #:transparent)
+  defstruct params: nil, body: nil, env: nil
+end
+# Boolean value
+defmodule BoolV do
+  # (struct BoolV ([b : Boolean]) #:transparent)
+  defstruct bool: false
+end
+# A Primitive operator
+defmodule PrimV do
+  # (struct PrimV ([op : (-> Value Value Value)]) #:transparent)
+  defstruct operator: 0
+end
 
-  # Closure Value Struct Definition -- Add more Value later
-  defmodule CloV do
-    defstruct params: nil, body: nil, env: nil
-  end
-
-  defmodule BoolV do
-    defstruct bool: false
-  end
-
-  # An environment
-  defmodule Environment do
-    defstruct bindings: %{} # Empty Map
-  end
-
-  # A PrimV
-  defmodule PrimC do
-    defstruct operator: 0, function: 0
-  end
+# An environment struct definition ------------------------------------------
+defmodule Environment do
+  # (define-type Env (Immutable-HashTable Symbol Value))
+  defstruct bindings: %{} # Empty Map
+end
 
 
-defmodule Main do
-
+defmodule ZHRL do
+  # parse - parse an expression
+  # given Sexp returns ExprC
   def parse(n) do
     cond do
       is_integer(n) -> %NumC{value: n}
@@ -98,53 +114,56 @@ defmodule Main do
     end
   end
 
-# Primitive wrapper functions
+  # Primitive wrapper functions -----------------------------------------------
+  # given left and right Values, return addition of them
   def myadd(l, r) do
     case [l, r] do
-      [%NumC{}, %NumC{}] -> l.value + r.value
+      [%NumV{}, %NumV{}] -> %NumV{value: l.value + r.value}
       _ -> raise "ZHRL: Unable to add"
     end
   end
-
+  # given left and right Values, return subtraction of them
   def mysub(l, r) do
     case [l, r] do
-      [%NumC{}, %NumC{}] -> l.value - r.value
+      [%NumV{}, %NumV{}] -> %NumV{value: l.value - r.value}
       _ -> raise "ZHRL: Unable to subtract"
     end
   end
-
+  # given left and right Values, return multiplication of them
   def mymult(l, r) do
     case [l, r] do
-      [%NumC{}, %NumC{}] -> l.value * r.value
+      [%NumV{}, %NumV{}] -> %NumV{value: l.value * r.value}
       _ -> raise "ZHRL: Unable to multiply"
     end
   end
-
+  # given left and right Values, return division of them
   def mydiv(l, r) do
     case [l, r] do
-      [%NumC{}, %NumC{}] -> unless r.value === 0 do
-        l.value / r.value end
+      [%NumV{}, %NumV{}] -> unless r.value === 0 do
+        %NumV{value: l.value / r.value} end
       _ -> raise "ZHRL: Unable to divide"
     end
   end
-
+  # given left and right Values, return Value true if <= else false
   def mylesseq(l, r) do
     case [l, r] do
-      [%NumC{}, %NumC{}] -> l.value <= r.value
+      [%NumV{}, %NumV{}] -> %BoolV{bool: l.value <= r.value}
     end
   end
-
+  # given left and right Values, return Value true if === else false
   def myeq(l, r) do
     case [l, r] do
-      [%NumC{}, %NumC{}] -> l.value === r.value
+      [%NumV{}, %NumV{}] -> %BoolV{bool: l.value === r.value}
     end
   end
 
+  # Environment helper functions ----------------------------------------------
+  # given Environment, Symbol, Value; return env with sym => val binding added
   def extend_env(env, sym, val) do
     env = Map.put(env, sym, val)
     env
   end
-
+  # make Env with built-in bindings for primitive operations and symbols
   def topEnv() do
     te = extend_env(%Environment{}.bindings, :+, 'myadd')
     te = extend_env(te, :-, 'mysub')
@@ -156,15 +175,14 @@ defmodule Main do
     te = extend_env(te, :false, %BoolV{bool: false})
     te
   end
-
+  # get the given symbol in the environment
   def envlookup(env, sym) do
     Map.get(env, sym)
   end
 
-  # given s, evaluate the s
+  # given an elixir datatype or array of ZHRL syntax, evaluate the ZHRL result
   def topInterp(s) do
     serialize(interp(parse(s), topEnv()))
-    myadd(%NumC{value: 3}, %NumC{value: 3})
   end
 end
 
@@ -172,7 +190,7 @@ end
 defmodule TestParse do
   def testIf do
     sexp = ['if', true, 0, 1]
-    result = Main.parse(sexp)
+    result = ZHRL.parse(sexp)
     expected = %IfC{
       else: %NumC{value: 1},
       test: %IdC{value: true},
@@ -184,7 +202,7 @@ defmodule TestParse do
   end
   def testLam do
     sexp = ['lam', ['x', 'y'], ['+', 'x', 'y']]
-    result = Main.parse(sexp)
+    result = ZHRL.parse(sexp)
     expected = %LamC{args: ['x','y'], body: ['+','x','y']}
     unless result === expected do
       raise "TestParse: testLam: fail1"
@@ -204,8 +222,8 @@ defmodule TestInterp do
       test: %IdC{value: true},
       then: %NumC{value: 0}
     }
-    topEnv = Main.topEnv()
-    result = Main.interp(expr, topEnv)
+    topEnv = ZHRL.topEnv()
+    result = ZHRL.interp(expr, topEnv)
     expected = %NumV{value: 0}
     unless result === expected do
       raise "TestInterp: testIf: fail1"
@@ -216,8 +234,8 @@ defmodule TestInterp do
       test: %IdC{value: false},
       then: %NumC{value: 0}
     }
-    topEnv = Main.topEnv()
-    result = Main.interp(expr, topEnv)
+    topEnv = ZHRL.topEnv()
+    result = ZHRL.interp(expr, topEnv)
     expected = %NumV{value: 1}
     unless result === expected do
       raise "TestInterp: testIf: fail2"
@@ -225,8 +243,8 @@ defmodule TestInterp do
   end
   def testLam do
     lam_x_y_plus = %LamC{args: ['x','y'], body: ['+','x','y']}
-    topEnv = Main.topEnv()
-    result = Main.interp(lam_x_y_plus, topEnv)
+    topEnv = ZHRL.topEnv()
+    result = ZHRL.interp(lam_x_y_plus, topEnv)
     expected = %CloV{params: lam_x_y_plus.args, body: lam_x_y_plus.body, env: topEnv}
     unless result === expected do
       raise "TestInterp: testLam: fail1"
@@ -238,10 +256,13 @@ defmodule TestInterp do
   end
 end
 
-IO.puts Main.topInterp(8)
-IO.inspect Main.parse(['if', 6 > 5, 1, 0])
-IO.inspect Main.parse(['if', 5 > 6, 6 > 5, 0])
-IO.puts Main.topInterp("Hello, World")
-Main.topInterp(:+)
-TestParse.testAll()
-TestInterp.testAll()
+defmodule Main do
+  ZHRL.topInterp(8)
+  ZHRL.myadd(%NumV{value: 3}, %NumV{value: 3})
+  IO.inspect ZHRL.parse(['if', 6 > 5, 1, 0])
+  IO.inspect ZHRL.parse(['if', 5 > 6, 6 > 5, 0])
+  IO.puts ZHRL.topInterp("Hello, World")
+  ZHRL.topInterp(:+)
+  TestParse.testAll()
+  TestInterp.testAll()
+end
