@@ -14,8 +14,12 @@
     defstruct value: nil
   end
 
+  # LamC ExprC Struct Definition
+  defmodule LamC do
+    defstruct args: nil, body: nil
+  end
 
-  # NumC Value Struct Definition -- Add more Value later
+  # Number Value Struct Definition -- Add more Value later
   defmodule NumV do
     defstruct value: nil
   end
@@ -25,6 +29,10 @@
     defstruct value: nil
   end
 
+  # Closure Value Struct Definition -- Add more Value later
+  defmodule CloV do
+    defstruct params: nil, body: nil, env: nil
+  end
 
   # An environment
   defmodule Environment do
@@ -44,6 +52,10 @@ defmodule Main do
       is_integer(n) -> %NumC{value: n}
       is_atom(n) -> %IdC{value: n}
       is_binary(n) -> %StringC{value: n}
+       # default case
+      true -> case n do
+        ['lam', a, b] -> %LamC{args: a, body: b}
+      end
     end
     # IO.puts num.value #Printing
   end
@@ -54,6 +66,7 @@ defmodule Main do
       %NumC{} -> %NumV{value: expr.value}
       %IdC{} -> envlookup(env, expr.value)
       %StringC{} -> %StringV{value: expr.value}
+      %LamC{} -> %CloV{params: expr.args, body: expr.body, env: env}
     end
   end
 
@@ -134,6 +147,35 @@ defmodule Main do
   end
 end
 
+
+defmodule TestParse do
+  def testLam do
+    unless Main.parse(['lam', ['x', 'y'], ['+', 'x', 'y']]) === %LamC{args: ['x','y'], body: ['+','x','y']} do
+      raise "TestParse: testLam: fail1"
+    end
+  end
+  def testAll do
+    testLam()
+  end
+end
+
+defmodule TestInterp do
+  def testLam do
+    lam_x_y_plus = %LamC{args: ['x','y'], body: ['+','x','y']}
+    topEnv = Main.topEnv()
+    result = Main.interp(lam_x_y_plus, topEnv)
+    expected = %CloV{params: lam_x_y_plus.args, body: lam_x_y_plus.body, env: topEnv}
+    unless result === expected do
+      raise "TestInterp: testLam: fail1"
+    end
+  end
+  def testAll do
+    testLam()
+  end
+end
+
 IO.puts Main.topInterp(8)
 IO.puts Main.topInterp("Hello, World")
 Main.topInterp(:+)
+TestParse.testAll()
+TestInterp.testAll()
