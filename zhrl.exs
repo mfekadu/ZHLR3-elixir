@@ -1,19 +1,30 @@
 
   # NumC ExprC Struct Definition -- Add more ExprC later
   defmodule NumC do
-    defstruct value: -1
+    defstruct value: nil
   end
 
   # IdC ExprC Struct Definition -- Add more ExprC later
   defmodule IdC do
-    defstruct value: -1
+    defstruct value: nil
+  end
+
+  # StringC ExprC Struct Definition -- Add more ExprC later
+  defmodule StringC do
+    defstruct value: nil
   end
 
 
   # NumC Value Struct Definition -- Add more Value later
   defmodule NumV do
-    defstruct value: -1
+    defstruct value: nil
   end
+
+  # StringV Value Struct Definition -- Add more Value later
+  defmodule StringV do
+    defstruct value: nil
+  end
+
 
   # An environment
   defmodule Environment do
@@ -32,6 +43,7 @@ defmodule Main do
     cond do
       is_integer(n) -> %NumC{value: n}
       is_atom(n) -> %IdC{value: n}
+      is_binary(n) -> %StringC{value: n}
     end
     # IO.puts num.value #Printing
   end
@@ -41,6 +53,7 @@ defmodule Main do
     case expr do
       %NumC{} -> %NumV{value: expr.value}
       %IdC{} -> envlookup(env, expr.value)
+      %StringC{} -> %StringV{value: expr.value}
     end
   end
 
@@ -48,31 +61,71 @@ defmodule Main do
   def serialize(v) do
     case v do
       %NumV{} -> IO.puts v.value
+      %StringV{} -> IO.puts v.value
       'myadd' -> IO.puts 'matched myadd'
     end
   end
 
+# Primitive wrapper functions
   def myadd(l, r) do
     case [l, r] do
       [%NumC{}, %NumC{}] -> l.value + r.value
-      _ -> "Error"
+      _ -> raise "ZHRL: Unable to add"
+    end
+  end
+
+  def mysub(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value - r.value
+      _ -> raise "ZHRL: Unable to subtract"
+    end
+  end
+
+  def mymult(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value * r.value
+      _ -> raise "ZHRL: Unable to multiply"
+    end
+  end
+
+  def mydiv(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> unless r.value === 0 do
+        l.value / r.value end
+      _ -> raise "ZHRL: Unable to divide"
+    end
+  end
+
+  def mylesseq(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value <= r.value
+    end
+  end
+
+  def myeq(l, r) do
+    case [l, r] do
+      [%NumC{}, %NumC{}] -> l.value === r.value
     end
   end
 
   def extend_env(env, sym, val) do
-    Map.put(env, sym, val)
+    env = Map.put(env, sym, val)
+    env
   end
 
   def topEnv() do
     te = extend_env(%Environment{}.bindings, :+, 'myadd')
+    te = extend_env(te, :-, 'mysub')
+    te = extend_env(te, :*, 'mymult')
+    te = extend_env(te, :/, 'mydiv')
+    te = extend_env(te, :<=, 'mylesseq')
+    te = extend_env(te, :equal?, 'myeq')
     te
   end
 
   def envlookup(env, sym) do
     Map.get(env, sym)
   end
-
-
 
   # given s, evaluate the s
   def topInterp(s) do
@@ -82,4 +135,5 @@ defmodule Main do
 end
 
 IO.puts Main.topInterp(8)
+IO.puts Main.topInterp("Hello, World")
 Main.topInterp(:+)
