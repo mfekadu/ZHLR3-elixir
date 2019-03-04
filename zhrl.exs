@@ -54,6 +54,7 @@ defmodule Main do
     case expr do
       %NumC{} -> %NumV{value: expr.value}
       %IdC{} -> envlookup(env, expr.value)
+      %LamC{} -> %CloV{params: expr.args, body: expr.body, env: env}
     end
   end
 
@@ -96,16 +97,32 @@ end
 
 
 defmodule TestParse do
-
   def testLam do
     unless Main.parse(['lam', ['x', 'y'], ['+', 'x', 'y']]) === %LamC{args: ['x','y'], body: ['+','x','y']} do
-      raise "fail1"
+      raise "TestParse: testLam: fail1"
     end
-
   end
+  def testAll do
+    testLam()
+  end
+end
 
+defmodule TestInterp do
+  def testLam do
+    lam_x_y_plus = %LamC{args: ['x','y'], body: ['+','x','y']}
+    topEnv = Main.topEnv()
+    result = Main.interp(lam_x_y_plus, topEnv)
+    expected = %CloV{params: lam_x_y_plus.args, body: lam_x_y_plus.body, env: topEnv}
+    unless result === expected do
+      raise "TestInterp: testLam: fail1"
+    end
+  end
+  def testAll do
+    testLam()
+  end
 end
 
 IO.puts Main.topInterp(8)
 Main.topInterp(:+)
-TestParse.testLam()
+TestParse.testAll()
+TestInterp.testAll()
