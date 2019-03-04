@@ -9,10 +9,19 @@
     defstruct value: -1
   end
 
+  # LamC ExprC Struct Definition
+  defmodule LamC do
+    defstruct args: nil, body: nil
+  end
 
-  # NumC Value Struct Definition -- Add more Value later
+  # Number Value Struct Definition -- Add more Value later
   defmodule NumV do
     defstruct value: -1
+  end
+
+  # Closure Value Struct Definition -- Add more Value later
+  defmodule CloV do
+    defstruct params: nil, body: nil, env: nil
   end
 
   # An environment
@@ -32,6 +41,10 @@ defmodule Main do
     cond do
       is_integer(n) -> %NumC{value: n}
       is_atom(n) -> %IdC{value: n}
+       # default case
+      true -> case n do
+        ['lam', a, b] -> %LamC{args: a, body: b}
+      end
     end
     # IO.puts num.value #Printing
   end
@@ -81,5 +94,18 @@ defmodule Main do
   end
 end
 
+
+defmodule TestParse do
+
+  def testLam do
+    unless Main.parse(['lam', ['x', 'y'], ['+', 'x', 'y']]) === %LamC{args: ['x','y'], body: ['+','x','y']} do
+      raise "fail1"
+    end
+
+  end
+
+end
+
 IO.puts Main.topInterp(8)
 Main.topInterp(:+)
+TestParse.testLam()
