@@ -4,6 +4,10 @@
     defstruct value: -1
   end
 
+  defmodule IfC do
+    defstruct test: nil, then: nil, else: nil
+  end
+
   # IdC ExprC Struct Definition -- Add more ExprC later
   defmodule IdC do
     defstruct value: -1
@@ -13,6 +17,10 @@
   # NumC Value Struct Definition -- Add more Value later
   defmodule NumV do
     defstruct value: -1
+  end
+
+  defmodule BoolV do
+    defstruct bool: false
   end
 
   # An environment
@@ -32,8 +40,10 @@ defmodule Main do
     cond do
       is_integer(n) -> %NumC{value: n}
       is_atom(n) -> %IdC{value: n}
+      true -> case n do
+                ['if', a, b, c] -> %IfC{test: a, then: b, else: c}
+              end
     end
-    # IO.puts num.value #Printing
   end
 
   # given ExprC and environment, output a Value
@@ -41,6 +51,16 @@ defmodule Main do
     case expr do
       %NumC{} -> %NumV{value: expr.value}
       %IdC{} -> envlookup(env, expr.value)
+      # %IfC{} -> i = interp(expr.test, env)
+      #           then = interp(expr.then, env)
+      #           els = interp(expr.els, env)
+      #           case i do
+      #             %BoolV{} -> case i.bool do
+      #                           true -> then
+      #                           false -> els
+      #                         end
+      #             _ -> "ZHRL: test expression must evaluate to boolean"
+      #           end
     end
   end
 
@@ -49,6 +69,7 @@ defmodule Main do
     case v do
       %NumV{} -> IO.puts v.value
       'myadd' -> IO.puts 'matched myadd'
+      %BoolV{} -> IO.puts v.bool
     end
   end
 
@@ -72,8 +93,6 @@ defmodule Main do
     Map.get(env, sym)
   end
 
-
-
   # given s, evaluate the s
   def topInterp(s) do
     serialize(interp(parse(s), topEnv()))
@@ -82,4 +101,6 @@ defmodule Main do
 end
 
 IO.puts Main.topInterp(8)
+IO.inspect Main.parse(['if', 6 > 5, 1, 0])
+IO.inspect Main.parse(['if', 5 > 6, 6 > 5, 0])
 Main.topInterp(:+)
