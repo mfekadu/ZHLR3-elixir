@@ -63,7 +63,7 @@ defmodule Main do
       # default case
       true -> case n do
           ['lam', a, b] -> %LamC{args: a, body: b}
-          ['if', a, b, c] -> %IfC{test: a, then: b, else: c}
+          ['if', a, b, c] -> %IfC{test: parse(a), then: parse(b), else: parse(c)}
       end
     end
   end
@@ -73,16 +73,16 @@ defmodule Main do
     case expr do
       %NumC{} -> %NumV{value: expr.value}
       %IdC{} -> envlookup(env, expr.value)
-      # %IfC{} -> i = interp(expr.test, env)
-      #           then = interp(expr.then, env)
-      #           els = interp(expr.els, env)
-      #           case i do
-      #             %BoolV{} -> case i.bool do
-      #                           true -> then
-      #                           false -> els
-      #                         end
-      #             _ -> "ZHRL: test expression must evaluate to boolean"
-      #           end
+      %IfC{} -> i = interp(expr.test, env)
+                then = interp(expr.then, env)
+                els = interp(expr.else, env)
+                case i do
+                  %BoolV{} -> case i.bool do
+                                true -> then
+                                false -> els
+                              end
+                  _ -> "ZHRL: test expression must evaluate to boolean"
+                end
       %StringC{} -> %StringV{value: expr.value}
       %LamC{} -> %CloV{params: expr.args, body: expr.body, env: env}
     end
@@ -152,6 +152,8 @@ defmodule Main do
     te = extend_env(te, :/, 'mydiv')
     te = extend_env(te, :<=, 'mylesseq')
     te = extend_env(te, :equal?, 'myeq')
+    te = extend_env(te, :true, %BoolV{bool: true})
+    te = extend_env(te, :false, %BoolV{bool: false})
     te
   end
 
