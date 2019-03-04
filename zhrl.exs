@@ -58,7 +58,7 @@ end
 # A Primitive operator
 defmodule PrimV do
   # (struct PrimV ([op : (-> Value Value Value)]) #:transparent)
-  defstruct operator: 0
+  defstruct operator: nil
 end
 
 # An environment struct definition ------------------------------------------
@@ -69,19 +69,11 @@ end
 
 
 defmodule ZHRL do
-  # parse - parse an expression
-  # given Sexp returns ExprC
-  def parse(n) do
-    cond do
-      is_integer(n) -> %NumC{value: n}
-      is_atom(n) -> %IdC{value: n}
-      is_binary(n) -> %StringC{value: n}
-      # default case
-      true -> case n do
-          ['lam', a, b] -> %LamC{args: a, body: b}
-          ['if', a, b, c] -> %IfC{test: parse(a), then: parse(b), else: parse(c)}
-      end
-    end
+  # given an elixir datatype or array of ZHRL syntax, evaluate the ZHRL result
+  def topInterp(s) do
+    result = serialize(interp(parse(s), topEnv()))
+    # IO.puts result
+    result
   end
 
   # given ExprC and environment, output a Value
@@ -104,13 +96,30 @@ defmodule ZHRL do
     end
   end
 
+  # parse - parse an expression
+  # given Sexp returns ExprC
+  def parse(n) do
+    cond do
+      is_integer(n) -> %NumC{value: n}
+      is_atom(n) -> %IdC{value: n}
+      is_binary(n) -> %StringC{value: n}
+      # default case
+      true -> case n do
+          ['lam', a, b] -> %LamC{args: a, body: b}
+          ['if', a, b, c] -> %IfC{test: parse(a), then: parse(b), else: parse(c)}
+      end
+    end
+  end
+
   # given Value, return String
   def serialize(v) do
     case v do
-      %NumV{} -> IO.puts v.value
-      %StringV{} -> IO.puts v.value
-      'myadd' -> IO.puts 'matched myadd'
-      %BoolV{} -> IO.puts v.bool
+      %NumV{} -> '#{v.value}'
+      %StringV{} -> '#{v.value}'
+      'myadd' -> 'matched myadd'
+      %BoolV{} -> '#{v.bool}'
+      %CloV{} -> "#<procedure>"
+      _ -> "unexpected value : #{v}"
     end
   end
 
@@ -178,11 +187,6 @@ defmodule ZHRL do
   # get the given symbol in the environment
   def envlookup(env, sym) do
     Map.get(env, sym)
-  end
-
-  # given an elixir datatype or array of ZHRL syntax, evaluate the ZHRL result
-  def topInterp(s) do
-    serialize(interp(parse(s), topEnv()))
   end
 end
 
@@ -257,12 +261,12 @@ defmodule TestInterp do
 end
 
 defmodule Main do
-  ZHRL.topInterp(8)
-  ZHRL.myadd(%NumV{value: 3}, %NumV{value: 3})
+  IO.puts ZHRL.topInterp(8)
+  IO.puts ZHRL.myadd(%NumV{value: 3}, %NumV{value: 3}).value
   IO.inspect ZHRL.parse(['if', 6 > 5, 1, 0])
   IO.inspect ZHRL.parse(['if', 5 > 6, 6 > 5, 0])
   IO.puts ZHRL.topInterp("Hello, World")
-  ZHRL.topInterp(:+)
+  IO.puts ZHRL.topInterp(:+)
   TestParse.testAll()
   TestInterp.testAll()
 end
