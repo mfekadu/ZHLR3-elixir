@@ -170,17 +170,59 @@ end
 
 
 defmodule TestParse do
+  def testIf do
+    sexp = ['if', true, 0, 1]
+    result = Main.parse(sexp)
+    expected = %IfC{
+      else: %NumC{value: 1},
+      test: %IdC{value: true},
+      then: %NumC{value: 0}
+    }
+    unless result === expected do
+      raise "TestParse: testIf: fail1"
+    end
+  end
   def testLam do
-    unless Main.parse(['lam', ['x', 'y'], ['+', 'x', 'y']]) === %LamC{args: ['x','y'], body: ['+','x','y']} do
+    sexp = ['lam', ['x', 'y'], ['+', 'x', 'y']]
+    result = Main.parse(sexp)
+    expected = %LamC{args: ['x','y'], body: ['+','x','y']}
+    unless result === expected do
       raise "TestParse: testLam: fail1"
     end
   end
   def testAll do
+    testIf()
     testLam()
   end
 end
 
 defmodule TestInterp do
+  def testIf do
+    # 'IfC.test' is true, therefore expect NumV.value to be '0'
+    expr = %IfC{
+      else: %NumC{value: 1},
+      test: %IdC{value: true},
+      then: %NumC{value: 0}
+    }
+    topEnv = Main.topEnv()
+    result = Main.interp(expr, topEnv)
+    expected = %NumV{value: 0}
+    unless result === expected do
+      raise "TestInterp: testIf: fail1"
+    end
+    # 'IfC.test' is false, therefore expect NumV.value to be '1'
+    expr = %IfC{
+      else: %NumC{value: 1},
+      test: %IdC{value: false},
+      then: %NumC{value: 0}
+    }
+    topEnv = Main.topEnv()
+    result = Main.interp(expr, topEnv)
+    expected = %NumV{value: 1}
+    unless result === expected do
+      raise "TestInterp: testIf: fail2"
+    end
+  end
   def testLam do
     lam_x_y_plus = %LamC{args: ['x','y'], body: ['+','x','y']}
     topEnv = Main.topEnv()
@@ -191,6 +233,7 @@ defmodule TestInterp do
     end
   end
   def testAll do
+    testIf()
     testLam()
   end
 end
